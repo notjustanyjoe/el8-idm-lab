@@ -1,0 +1,67 @@
+---
+- name: prepare ipa server
+  hosts: idm-server
+  become: true
+  collections:
+    - freeipa.ansible_freeipa
+  tasks:
+    # # - name: Set timezone to America/Denver
+    # #   community.general.timezone:
+    # #     name: America/Denver
+
+    # - name: Add epel-release repo
+    #   package:
+    #     name: epel-release
+    #     state: present
+
+    # - name: Add my common tools
+    #   package:
+    #     name:
+    #       - wget
+    #       - tmux
+    #       - vim
+    #       - bind-utils
+    #     state: present
+
+    # - name: Add chronyd and firewall for ipa
+    #   package:
+    #     name:
+    #       - firewalld
+    #       - chrony
+    #     state: present
+
+    # - name: enable firewalld
+    #   systemd:
+    #     name: '{{ item }}'
+    #     state: started
+    #     enabled: yes
+    #   with_items:
+    #     - firewalld
+    #     - chronyd
+
+    - name: delete the loopback address
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1.*idm.*'
+        line: "# disable hostname's loopback"
+
+    - name: add local name resolution
+      blockinfile:
+        path: /etc/hosts
+        marker: '######'
+        insertafter: '### Use local hosts file for name resolution'
+        state: present
+        block: |
+          192.168.56.10   dc.example.local dc
+          192.168.56.20   idm-server.example.local  idm-server
+          192.168.56.21   idm-node1.example.local   idm-node1
+
+    # # need to update nss package or ipa server role will fail
+    # - name: dnf update
+    #   package:
+    #     name: '*'
+    #     state: latest
+
+    - name: include ipa server role
+      include_role:
+        name: ipaserver
